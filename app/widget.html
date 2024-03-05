@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+    font-family: 'Arial', sans-serif;
+    margin: 20px;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    color: #555;
+}
+
+input[type="text"] {
+    padding: 8px;
+    width: 200px;
+}
+
+button {
+    padding: 8px;
+    background-color: #3498db;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    padding: 10px;
+    text-align: left;
+    border: 1px solid #ddd;
+}
+
+th {
+    background-color: #3498db;
+    color: #fff;
+}
+
+tbody tr:hover {
+    background-color: #f5f5f5;
+}
+
+input[type="checkbox"] {
+    margin-right: 5px;
+}
+/* Merge button styling */
+button#mergeButton {
+    padding: 12px 20px;
+    background-color: #4CAF50;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+/* Hover effect */
+button#mergeButton:hover {
+    background-color: #45a049;
+}
+
+#statusMessage{
+    font-weight: bold;
+    margin: 10px;
+    text-align: center;
+}
+
+
+    </style>
+    <meta charset="UTF-8">
+    <script src="https://live.zwidgets.com/js-sdk/1.1/ZohoEmbededAppSDK.min.js"></script>
+    <script>
+      var id;
+      var module;
+      ZOHO.embeddedApp.on("PageLoad",function(data){
+         id=data.EntityId,module=data.Entity;
+        console.log(id,module);
+       
+      });
+      ZOHO.embeddedApp.init();
+      
+      async function searchRecords() {
+    try {
+        const phoneNumber = document.getElementById('phone').value;
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const address = document.getElementById('address').value;
+
+        // Use similar logic to search both Leads and Contacts
+        const leadsData = await searchModule("Leads", phoneNumber, name, email, address);
+        const contactsData = await searchModule("Contacts", phoneNumber, name, email, address);
+
+        console.log("Leads Data:", leadsData);
+        console.log("Contacts Data:", contactsData);
+
+        const leads = leadsData.map(lead => ({
+            type: 'Lead',
+            id: lead.id,
+            name: lead.Full_Name || `${lead.First_Name || ''} ${lead.Last_Name || ''}`,
+            email: lead.Email || lead.Secondary_Email || '',
+            phone: lead.Phone,
+            mobile:lead.mobile,
+            address: lead.Street,
+            wphone: lead.Work_Phone
+        }));
+
+        const contacts = contactsData.map(contact => ({
+            type: 'Contact',
+            id: contact.id,
+            name: contact.Full_Name || `${contact.First_Name || ''} ${contact.Last_Name || ''}`,
+            email: contact.Email || contact.Secondary_Email || '',
+            phone: contact.Phone,
+            mobile:contact.mobile,
+            address: contact.Street,
+            wphone: contact.Work_Phone
+        }));
+
+        // Combine leads and contacts data
+        const combinedData = leads.concat(contacts);
+
+        displayData(combinedData);
+    } catch (error) {
+        console.error("Error in searchRecords:", error);
+    }
+}
+
+// Function to search records in a specific module (Leads or Contacts)
+async function searchModule(module, phoneNumber, name, email, address) {
+    let searchQuery;
+    let searchType;
+    let delay;
+
+    if (phoneNumber !== "") {
+        searchQuery = phoneNumber;
+        searchType = "phone";
+        delay = false;
+    } else if (name !== "") {
+        searchQuery = `((Last_Name:equals:${name})or(First_Name:equals:${name}))`;
+        searchType = "criteria";
+    } else if (email !== "") {
+        searchQuery = email;
+        searchType = "email";
+    } else if (address !== "") {
+        searchQuery = `(Street:equals:${address})`;
+        searchType = "criteria";
+    } else {
+        // No search criteria provided
+        console.log("Please provide at least one search parameter.");
+        return [];
+    }
+
+    const data = await ZOHO.CRM.API.searchRecord({
+        Entity: module,
+        Type: searchType,
+        Query: searchQuery,
+        delay: delay
+    });
+
+    return data.data || [];
+}
+function displayData(data) {
+    const tableBody = document.getElementById('dataTableBody');
+    if (!tableBody) {
+        console.error("Table body element not found.");
+        return;
+    }
+
+    tableBody.innerHTML = '';
+
+    if (data.length === 0) {
+        console.log("No records found.");
+        return;
+    }
+
+    data.forEach((record) => {
+        const row = tableBody.insertRow();
+        const checkboxCell = row.insertCell(0);
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `${record.id}`;
+       
+        checkbox.setAttribute('data-type', record.type);
+        checkbox.addEventListener('click', () => handleCheckboxClick());
+        checkboxCell.appendChild(checkbox);
+
+        const typeCell = row.insertCell(1);
+        typeCell.textContent = record.type;
+        
+
+        const idCell = row.insertCell(2);
+        idCell.textContent = record.id;
+
+        const nameCell = row.insertCell(3);
+        nameCell.textContent = record.name;
+
+        const emailCell = row.insertCell(4);
+        emailCell.textContent = record.email;
+        const relationCell = row.insertCell(5);
+        const dropdown = createRelationDropdown(record.type);
+        relationCell.appendChild(dropdown);
+        const phoneCell = row.insertCell(6);
+        phoneCell.textContent = record.phone;
+        
+        const addressCell = row.insertCell(7);
+        addressCell.textContent = record.address;
+        const mobileCell = row.insertCell(8);
+        mobileCell.textContent = record.mobile;
+        const wphoneCell = row.insertCell(9);
+        wphoneCell.textContent = record.wphone;
+        
+
+    });
+}
+
+function createRelationDropdown(recordType) {
+    const dropdown = document.createElement('select');
+
+    const optionMaster = document.createElement('option');
+    optionMaster.value = 'Master';
+    optionMaster.textContent = 'Master';
+
+    const optionChild = document.createElement('option');
+    optionChild.value = 'Child';
+    optionChild.textContent = 'Child';
+
+    // Set default value based on record type
+    if (recordType === 'Contact') {
+        optionMaster.selected = true;
+    } else {
+        optionChild.selected = true;
+    }
+
+    dropdown.appendChild(optionMaster);
+    dropdown.appendChild(optionChild);
+
+    return dropdown;
+}
+
+function showStatusMessage(message) {
+    const statusMessageDiv = document.getElementById('statusMessage');
+    statusMessageDiv.innerHTML = message;
+}
+
+function clearStatusMessage() {
+    const statusMessageDiv = document.getElementById('statusMessage');
+    statusMessageDiv.innerHTML = '';
+}
+function displaySearchInfo(searchType, searchQuery) {
+            const searchInfo = document.getElementById('searchInfo');
+            searchInfo.textContent = `Searching by ${searchType}: ${searchQuery}`;
+        }
+
+function displayLeads(leads) {
+    const tableBody = document.getElementById('leadsTableBody');
+    tableBody.innerHTML = '';
+
+    leads.forEach((lead) => {
+        const row = tableBody.insertRow();
+
+       
+        const checkboxCell = row.insertCell(0);
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `${lead.id}`; 
+        checkbox.addEventListener('click', () => handleCheckboxClick()); 
+        checkboxCell.appendChild(checkbox);
+
+        
+        const leadIdCell = row.insertCell(1);
+        leadIdCell.textContent = lead.id;
+
+        const nameCell = row.insertCell(2);
+        nameCell.textContent = lead.name;
+
+        const emailCell = row.insertCell(3);
+        emailCell.textContent = lead.email;
+
+        
+    });
+}
+function handleCheckboxClick() {
+    const checkboxes = document.querySelectorAll('input[type=checkbox]:checked');
+    const mergeButton = document.getElementById('mergeButton');
+    mergeButton.style.display = checkboxes.length >= 2 ? 'block' : 'none';
+}
+function mergeSelectedLeads() {
+    const checkboxes = document.querySelectorAll('input[type=checkbox]:checked');
+
+    
+    const selectedLeadIds = Array.from(checkboxes).map(checkbox => {
+        return checkbox.id;
+    });
+
+    
+    mergeLeads(selectedLeadIds);
+
+    
+    checkboxes.forEach(checkbox => checkbox.checked = false);
+    document.getElementById('mergeButton').style.display = 'none';
+}
+
+function mergeLeads(ids) {
+    const mergedData = ids.map(id => {
+        const checkbox = document.getElementById(id);
+        const type = checkbox ? checkbox.getAttribute('data-type') : null;
+
+        return {
+            type,
+            id
+        };
+    });
+
+    console.log(mergedData);
+
+    // Now you have an array of objects with type and id
+    // Format this data as needed for your API call
+    const requestData = {
+        Contact: mergedData.filter(record => record.type === 'Contact').map(record => record.id),
+        Lead: mergedData.filter(record => record.type === 'Lead').map(record => record.id)
+    };
+
+    console.log(requestData);
+
+    var func_name = "MergeLeads";
+    var req_data = {
+        "ids": JSON.stringify(requestData)
+    };
+
+    ZOHO.CRM.FUNCTIONS.execute(func_name, req_data)
+    .then(function(data){
+        console.log(data);
+
+        if (data.code === 'success') {
+            
+            showAlert('Records merged successfully!');
+            clearTable();
+        } else {
+           
+            showAlert('Error merging records. Please try again.');
+        }
+    })
+    .catch(function(error) {
+        console.error('Error in mergeLeads:', error);
+        // Show an error message
+        showAlert('An unexpected error occurred. Please try again.');
+    });
+}
+function clearTable() {
+    const tableBody = document.getElementById('dataTableBody');
+    tableBody.innerHTML = '';
+}
+function showAlert(message) {
+    alert(message);
+    
+}
+
+    </script>
+  </head>
+  <body>
+    <body>
+      <label for="phone">Search by Phone Number:</label>
+      <input type="text" id="phone" placeholder="Enter phone number"> or
+      <label for="name">Search by Name:</label>
+        <input type="text" id="name" placeholder="Enter name"> or
+        <label for="email">Search by Email:</label>
+        <input type="text" id="email" placeholder="Enter email"> or
+        <label for="address">Search by Address:</label>
+        <input type="text" id="address" placeholder="Enter address"> 
+        <div id="searchInfo"></div>
+        <div id="statusMessage"></div>
+
+      <button onclick="searchRecords()">Search</button>
+      <table id="dataTable" border="1">
+          <thead>
+              <tr>
+                  <th>Select</th>
+                  
+                  <th>Lead/Contact</th>
+                  <th>Lead ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Relation</th> 
+                  <th>Phone</th> 
+                  <th>Address</th> 
+                  <th>Mobile</th>
+                  <th>Work Phone</th>
+
+                  <!-- Add more columns as needed -->
+              </tr>
+          </thead>
+          <tbody id="dataTableBody">
+              <!-- Data will be populated here -->
+          </tbody>
+      </table>
+      <button id="mergeButton" onclick="mergeSelectedLeads()" style="display: none;">Merge Selected Leads</button>
+
+
+  </body>
+  </body>
+</html>
