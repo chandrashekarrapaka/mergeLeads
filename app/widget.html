@@ -2,6 +2,9 @@
 <html>
   <head>
     <style>
+        table {
+        width: 20%; /* Adjust this value as needed */
+    }
       body {
     font-family: 'Arial', sans-serif;
     margin: 20px;
@@ -77,45 +80,51 @@ button#mergeButton:hover {
     margin: 10px;
     text-align: center;
 }
+@media screen and (max-width: 600px) {
+    /* Adjust styles for smaller screens */
+    table {
+        width: 100%;
+    }
+}
+table {
+    width: 100%;
+    overflow-x: auto;
+}
 
 
     </style>
     <meta charset="UTF-8">
     <script src="https://live.zwidgets.com/js-sdk/1.1/ZohoEmbededAppSDK.min.js"></script>
     <script>
-      var id;
-      var module;
+    var id;
+    var module;
+    var leadid;
       ZOHO.embeddedApp.on("PageLoad",function(data){
          id=data.EntityId,module=data.Entity;
-        console.log(id,module);
+        leadid= data.EntityId;
+        ZOHO.CRM.UI.Resize({height:"500",width:"1300"}).then(function(data){
+	console.log(data);
+});
        
       });
+      
       ZOHO.embeddedApp.init();
+     
       
       async function searchRecords() {
+        console.log(leadid);
     try {
-        const phoneNumber = document.getElementById('phone').value;
+        //const phoneNumber = document.getElementById('phone').value;
         const name = document.getElementById('name').value;
         const email = document.getElementById('email').value;
         const address = document.getElementById('address').value;
 
         // Use similar logic to search both Leads and Contacts
-        const leadsData = await searchModule("Leads", phoneNumber, name, email, address);
-        const contactsData = await searchModule("Contacts", phoneNumber, name, email, address);
+        //const leadsData = await searchModule("Leads", name, email, address);
+        const contactsData = await searchModule("Contacts", name, email, address);
 
-        console.log("Leads Data:", leadsData);
+        //console.log("Leads Data:", leadsData);
         console.log("Contacts Data:", contactsData);
-
-        const leads = leadsData.map(lead => ({
-            type: 'Lead',
-            id: lead.id,
-            name: lead.Full_Name || `${lead.First_Name || ''} ${lead.Last_Name || ''}`,
-            email: lead.Email || lead.Secondary_Email || '',
-            phone: lead.Phone,
-            mobile:lead.mobile,
-            address: lead.Street,
-            wphone: lead.Work_Phone
-        }));
 
         const contacts = contactsData.map(contact => ({
             type: 'Contact',
@@ -125,29 +134,25 @@ button#mergeButton:hover {
             phone: contact.Phone,
             mobile:contact.mobile,
             address: contact.Street,
-            wphone: contact.Work_Phone
+            wphone: contact.Work_Phone,
+            hphone:contact.home_Phone
         }));
 
         // Combine leads and contacts data
-        const combinedData = leads.concat(contacts);
+       // const combinedData = leads.concat(contacts);
 
-        displayData(combinedData);
+        displayData(contacts);
     } catch (error) {
         console.error("Error in searchRecords:", error);
     }
 }
 
 // Function to search records in a specific module (Leads or Contacts)
-async function searchModule(module, phoneNumber, name, email, address) {
+async function searchModule(module, name, email, address) {
     let searchQuery;
     let searchType;
     let delay;
-
-    if (phoneNumber !== "") {
-        searchQuery = phoneNumber;
-        searchType = "phone";
-        delay = false;
-    } else if (name !== "") {
+     if (name !== "") {
         searchQuery = `((Last_Name:equals:${name})or(First_Name:equals:${name}))`;
         searchType = "criteria";
     } else if (email !== "") {
@@ -182,12 +187,41 @@ function displayData(data) {
 
     if (data.length === 0) {
         console.log("No records found.");
+        alert("No Record Found");
         return;
     }
 
     data.forEach((record) => {
         const row = tableBody.insertRow();
-        const checkboxCell = row.insertCell(0);
+        
+
+        // const typeCell = row.insertCell(1);
+        // typeCell.textContent = record.type;
+        
+
+        
+
+        const nameCell = row.insertCell(0);
+        nameCell.textContent = record.name;
+
+        const emailCell = row.insertCell(1);
+        emailCell.textContent = record.email;
+        
+        const phoneCell = row.insertCell(2);
+        phoneCell.textContent = record.phone;
+        
+        const addressCell = row.insertCell(3);
+        addressCell.textContent = record.address;
+        const hphoneCell = row.insertCell(4);
+        hphoneCell.textContent = record.hphone;
+        const mobileCell = row.insertCell(5);
+        mobileCell.textContent = record.phone;
+        const wphoneCell = row.insertCell(6);
+        wphoneCell.textContent = record.wphone;
+        const relationCell = row.insertCell(7);
+        const dropdown = createRelationDropdown(record.type);
+        relationCell.appendChild(dropdown);
+        const checkboxCell = row.insertCell(8);
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.id = `${record.id}`;
@@ -195,31 +229,8 @@ function displayData(data) {
         checkbox.setAttribute('data-type', record.type);
         checkbox.addEventListener('click', () => handleCheckboxClick());
         checkboxCell.appendChild(checkbox);
-
-        const typeCell = row.insertCell(1);
-        typeCell.textContent = record.type;
-        
-
-        const idCell = row.insertCell(2);
+        const idCell = row.insertCell(9);
         idCell.textContent = record.id;
-
-        const nameCell = row.insertCell(3);
-        nameCell.textContent = record.name;
-
-        const emailCell = row.insertCell(4);
-        emailCell.textContent = record.email;
-        const relationCell = row.insertCell(5);
-        const dropdown = createRelationDropdown(record.type);
-        relationCell.appendChild(dropdown);
-        const phoneCell = row.insertCell(6);
-        phoneCell.textContent = record.phone;
-        
-        const addressCell = row.insertCell(7);
-        addressCell.textContent = record.address;
-        const mobileCell = row.insertCell(8);
-        mobileCell.textContent = record.mobile;
-        const wphoneCell = row.insertCell(9);
-        wphoneCell.textContent = record.wphone;
         
 
     });
@@ -229,22 +240,23 @@ function createRelationDropdown(recordType) {
     const dropdown = document.createElement('select');
 
     const optionMaster = document.createElement('option');
-    optionMaster.value = 'Master';
-    optionMaster.textContent = 'Master';
+    optionMaster.value = 'Home Phone';
+    optionMaster.textContent = 'Home Phone';
 
     const optionChild = document.createElement('option');
-    optionChild.value = 'Child';
-    optionChild.textContent = 'Child';
+    optionChild.value = 'Mobile';
+    optionChild.textContent = 'Mobile';
+    const optionChild2 = document.createElement('option');
+    optionChild2.value = 'Other Phone';
+    optionChild2.textContent = 'Other Phone';
 
     // Set default value based on record type
-    if (recordType === 'Contact') {
-        optionMaster.selected = true;
-    } else {
-        optionChild.selected = true;
-    }
+    
 
     dropdown.appendChild(optionMaster);
     dropdown.appendChild(optionChild);
+    dropdown.appendChild(optionChild2);
+
 
     return dropdown;
 }
@@ -294,49 +306,45 @@ function displayLeads(leads) {
 function handleCheckboxClick() {
     const checkboxes = document.querySelectorAll('input[type=checkbox]:checked');
     const mergeButton = document.getElementById('mergeButton');
-    mergeButton.style.display = checkboxes.length >= 2 ? 'block' : 'none';
+    mergeButton.style.display = checkboxes.length == 1 ? 'block' : 'none';
 }
 function mergeSelectedLeads() {
     const checkboxes = document.querySelectorAll('input[type=checkbox]:checked');
 
-    
-    const selectedLeadIds = Array.from(checkboxes).map(checkbox => {
-        return checkbox.id;
+    const selectedLeadData = Array.from(checkboxes).map(checkbox => {
+        const row = checkbox.closest('tr');
+
+        return {
+            id: checkbox.id,
+            mobile: row.cells[2].textContent,
+            additionalNumber: row.cells[7].querySelector('select').value,
+            conId: row.cells[9].textContent
+            // Add more fields as needed
+        };
     });
 
-    
-    mergeLeads(selectedLeadIds);
+    mergeLeads(selectedLeadData);
 
-    
     checkboxes.forEach(checkbox => checkbox.checked = false);
     document.getElementById('mergeButton').style.display = 'none';
 }
 
-function mergeLeads(ids) {
-    const mergedData = ids.map(id => {
-        const checkbox = document.getElementById(id);
-        const type = checkbox ? checkbox.getAttribute('data-type') : null;
-
-        return {
-            type,
-            id
-        };
-    });
-
-    console.log(mergedData);
-
-    // Now you have an array of objects with type and id
-    // Format this data as needed for your API call
-    const requestData = {
-        Contact: mergedData.filter(record => record.type === 'Contact').map(record => record.id),
-        Lead: mergedData.filter(record => record.type === 'Lead').map(record => record.id)
-    };
+function mergeLeads(conData) {
+    console.log(conData);
+   
+    const requestData = conData.map(record => ({
+        id: record.id,
+        mobile: record.mobile,
+        addThisNumberToo: record['additionalNumber'], // Use the correct field name
+        leadId:leadid, // Use the correct field name
+        // Include other fields as needed
+    }));
 
     console.log(requestData);
 
-    var func_name = "MergeLeads";
+    var func_name = "MergeLeadsv1";
     var req_data = {
-        "ids": JSON.stringify(requestData)
+        "id": JSON.stringify(requestData)
     };
 
     ZOHO.CRM.FUNCTIONS.execute(func_name, req_data)
@@ -358,6 +366,7 @@ function mergeLeads(ids) {
         showAlert('An unexpected error occurred. Please try again.');
     });
 }
+
 function clearTable() {
     const tableBody = document.getElementById('dataTableBody');
     tableBody.innerHTML = '';
@@ -371,8 +380,8 @@ function showAlert(message) {
   </head>
   <body>
     <body>
-      <label for="phone">Search by Phone Number:</label>
-      <input type="text" id="phone" placeholder="Enter phone number"> or
+      <!-- <label for="phone">Search by Phone Number:</label>
+      <input type="text" id="phone" placeholder="Enter phone number"> or -->
       <label for="name">Search by Name:</label>
         <input type="text" id="name" placeholder="Enter name"> or
         <label for="email">Search by Email:</label>
@@ -386,17 +395,18 @@ function showAlert(message) {
       <table id="dataTable" border="1">
           <thead>
               <tr>
-                  <th>Select</th>
-                  
-                  <th>Lead/Contact</th>
-                  <th>Lead ID</th>
                   <th>Name</th>
+                  
                   <th>Email</th>
-                  <th>Relation</th> 
-                  <th>Phone</th> 
-                  <th>Address</th> 
                   <th>Mobile</th>
-                  <th>Work Phone</th>
+                  <th>Address</th>
+                  <th>Home Phone</th>
+                  <th>Mobile</th>
+                  <th>Other Phone</th> 
+                  <th>Add this Number too</th> 
+                  <th>Select</th> 
+                  <th>ContactID</th>
+                  
 
                   <!-- Add more columns as needed -->
               </tr>
