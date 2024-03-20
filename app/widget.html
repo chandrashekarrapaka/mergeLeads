@@ -2,97 +2,119 @@
 <html>
   <head>
     <style>
+        /* Font */
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+        
+        /* General styles */
+        body {
+          font-family: 'Roboto', sans-serif;
+          margin: 20px;
+          background-color: #f8f9fa;
+        }
+  
+        h1 {
+          text-align: center;
+          color: #333;
+        }
+  
+        label {
+          display: block;
+          margin-bottom: 5px;
+          color: #555;
+        }
+  
+        input[type="text"], button {
+          padding: 12px;
+          font-size: 14px;
+          border: 2px solid #ccc;
+          border-radius: 5px;
+          outline: none;
+          transition: border-color 0.3s;
+          font-family: 'Roboto', sans-serif;
+          margin-bottom: 10px;
+        }
+  
+        input[type="text"]:focus {
+          border-color: #3498db;
+        }
+  
+        button {
+          background-color: #3498db;
+          color: #fff;
+          cursor: pointer;
+          transition: background-color 0.3s;
+        }
+  
+        button:hover {
+          background-color: #2980b9;
+        }
+  
+        /* Table styles */
         table {
-        width: 20%; /* Adjust this value as needed */
-    }
-      body {
-    font-family: 'Arial', sans-serif;
-    margin: 20px;
-}
-
-h1 {
-    text-align: center;
-    color: #333;
-}
-
-label {
-    display: block;
-    margin-bottom: 5px;
-    color: #555;
-}
-
-input[type="text"] {
-    padding: 8px;
-    width: 200px;
-}
-
-button {
-    padding: 8px;
-    background-color: #3498db;
-    color: #fff;
-    border: none;
-    cursor: pointer;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-
-th, td {
-    padding: 10px;
-    text-align: left;
-    border: 1px solid #ddd;
-}
-
-th {
-    background-color: #3498db;
-    color: #fff;
-}
-
-tbody tr:hover {
-    background-color: #f5f5f5;
-}
-
-input[type="checkbox"] {
-    margin-right: 5px;
-}
-/* Merge button styling */
-button#mergeButton {
-    padding: 12px 20px;
-    background-color: #4CAF50;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s;
-}
-
-/* Hover effect */
-button#mergeButton:hover {
-    background-color: #45a049;
-}
-
-#statusMessage{
-    font-weight: bold;
-    margin: 10px;
-    text-align: center;
-}
-@media screen and (max-width: 600px) {
-    /* Adjust styles for smaller screens */
-    table {
-        width: 100%;
-    }
-}
-table {
-    width: 100%;
-    overflow-x: auto;
-}
-
-
-    </style>
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 20px;
+          background-color: #fff;
+        }
+  
+        th, td {
+          padding: 12px;
+          text-align: left;
+          border: 1px solid #ddd;
+        }
+  
+        th {
+          background-color: #3498db;
+          color: #fff;
+        }
+  
+        tbody tr:hover {
+          background-color: #f5f5f5;
+        }
+  
+        /* Search container styles */
+        .search-container {
+          display: flex;
+          align-items: center;
+          margin-bottom: 20px;
+        }
+  
+        #searchButton, #clearButton {
+          margin-left: 10px;
+        }
+  
+        /* Merge button styles */
+        #mergeButton {
+            display: block;
+            margin: 20px auto; /* Center the button and add space */
+            padding: 12px 40px; /* Adjust padding as needed */
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+  
+        button#mergeButton:hover {
+          background-color: #45a049;
+        }
+  
+        /* Status message styles */
+        #statusMessage {
+          font-weight: bold;
+          margin: 10px;
+          text-align: center;
+        }
+  
+        @media screen and (max-width: 600px) {
+          /* Adjust styles for smaller screens */
+          table {
+            width: 100%;
+          }
+        }
+      </style>
     <meta charset="UTF-8">
     <script src="https://live.zwidgets.com/js-sdk/1.1/ZohoEmbededAppSDK.min.js"></script>
     <script>
@@ -101,8 +123,8 @@ table {
     var leadid;
       ZOHO.embeddedApp.on("PageLoad",function(data){
          id=data.EntityId,module=data.Entity;
-        leadid= data.EntityId;
-        ZOHO.CRM.UI.Resize({height:"500",width:"1300"}).then(function(data){
+        leadid= data.EntityId;//500,1300
+        ZOHO.CRM.UI.Resize({height:"700",width:"1300"}).then(function(data){
 	console.log(data);
 });
        
@@ -132,10 +154,10 @@ table {
             name: contact.Full_Name || `${contact.First_Name || ''} ${contact.Last_Name || ''}`,
             email: contact.Email || contact.Secondary_Email || '',
             phone: contact.Phone,
-            mobile:contact.mobile,
+            mobile:contact.Mobile,
             address: contact.Street,
             wphone: contact.Work_Phone,
-            hphone:contact.home_Phone
+            hphone:contact.Home_Phone
         }));
 
         // Combine leads and contacts data
@@ -148,34 +170,51 @@ table {
 }
 
 // Function to search records in a specific module (Leads or Contacts)
+// Function to search records in a specific module (Leads or Contacts)
 async function searchModule(module, name, email, address) {
     let searchQuery;
     let searchType;
     let delay;
-     if (name !== "") {
-        searchQuery = `((Last_Name:equals:${name})or(First_Name:equals:${name}))`;
-        searchType = "criteria";
+    if (name !== "") {
+       
     } else if (email !== "") {
-        searchQuery = email;
-        searchType = "email";
+        
     } else if (address !== "") {
-        searchQuery = `(Street:equals:${address})`;
-        searchType = "criteria";
+        
     } else {
         // No search criteria provided
         console.log("Please provide at least one search parameter.");
         return [];
     }
+    var inputs={
+        name:name,
+        email:email,
+        address:address
 
-    const data = await ZOHO.CRM.API.searchRecord({
-        Entity: module,
-        Type: searchType,
-        Query: searchQuery,
-        delay: delay
-    });
+    }
+    var func_name = "searchContactsInWidget";//String
+    var req_data = {
+        "id": JSON.stringify(inputs)
+    };
 
-    return data.data || [];
+    var recdata= await ZOHO.CRM.FUNCTIONS.execute(func_name, req_data)
+    .then(function(data){
+        console.log(data);
+        const output = data.details.output;
+        const parsedOutput = JSON.parse(output);
+        return parsedOutput.flat();
+    })
+    console.log("recdata:", recdata);
+    // Parse the JSON string into an array of objects
+    // const parsedData = JSON.parse(recdata);
+    
+    // // Flatten the array if necessary
+    // const flatData = Array.isArray(parsedData[0]) ? parsedData.flat() : parsedData;
+    
+    return recdata || [];
 }
+
+   
 function displayData(data) {
     const tableBody = document.getElementById('dataTableBody');
     if (!tableBody) {
@@ -191,15 +230,9 @@ function displayData(data) {
         return;
     }
 
+    console.log(data);
     data.forEach((record) => {
         const row = tableBody.insertRow();
-        
-
-        // const typeCell = row.insertCell(1);
-        // typeCell.textContent = record.type;
-        
-
-        
 
         const nameCell = row.insertCell(0);
         nameCell.textContent = record.name;
@@ -229,8 +262,8 @@ function displayData(data) {
         checkbox.setAttribute('data-type', record.type);
         checkbox.addEventListener('click', () => handleCheckboxClick());
         checkboxCell.appendChild(checkbox);
-        const idCell = row.insertCell(9);
-        idCell.textContent = record.id;
+        // const idCell = row.insertCell(9);
+        // idCell.textContent = record.id;
         
 
     });
@@ -238,6 +271,9 @@ function displayData(data) {
 
 function createRelationDropdown(recordType) {
     const dropdown = document.createElement('select');
+    // const optionMaster1 = document.createElement('option');
+    // optionMaster1.value = '';
+    // optionMaster1.textContent = '';
 
     const optionMaster = document.createElement('option');
     optionMaster.value = 'Home Phone';
@@ -252,6 +288,7 @@ function createRelationDropdown(recordType) {
 
     // Set default value based on record type
     
+   // dropdown.appendChild(optionMaster1);
 
     dropdown.appendChild(optionMaster);
     dropdown.appendChild(optionChild);
@@ -307,18 +344,23 @@ function handleCheckboxClick() {
     const checkboxes = document.querySelectorAll('input[type=checkbox]:checked');
     const mergeButton = document.getElementById('mergeButton');
     mergeButton.style.display = checkboxes.length == 1 ? 'block' : 'none';
+    const additionalNumberDropdown = document.getElementById('additionalNumber');
+    
 }
 function mergeSelectedLeads() {
     const checkboxes = document.querySelectorAll('input[type=checkbox]:checked');
 
     const selectedLeadData = Array.from(checkboxes).map(checkbox => {
         const row = checkbox.closest('tr');
+        const idCell = row.querySelector('td:last-child');
+        const contactId = idCell.textContent;
+        console.log('Contact ID:', contactId);
 
         return {
             id: checkbox.id,
             mobile: row.cells[2].textContent,
             additionalNumber: row.cells[7].querySelector('select').value,
-            conId: row.cells[9].textContent
+            conId: contactId
             // Add more fields as needed
         };
     });
@@ -375,6 +417,19 @@ function showAlert(message) {
     alert(message);
     
 }
+function clearTableAndFields() {
+    // Clear input fields
+    document.getElementById('name').value = '';
+    document.getElementById('email').value = '';
+    document.getElementById('address').value = '';
+
+    // Clear table
+    clearTable();
+
+    // Clear any status messages
+    clearStatusMessage();
+}
+
 
     </script>
   </head>
@@ -387,25 +442,25 @@ function showAlert(message) {
         <label for="email">Search by Email:</label>
         <input type="text" id="email" placeholder="Enter email"> or
         <label for="address">Search by Address:</label>
-        <input type="text" id="address" placeholder="Enter address"> 
-        <div id="searchInfo"></div>
-        <div id="statusMessage"></div>
-
-      <button onclick="searchRecords()">Search</button>
+        <div class="search-container">
+            <input type="text" id="address" placeholder="Enter address"> 
+            <button id="searchButton" onclick="searchRecords()">Search</button>
+            <button id="clearButton" onclick="clearTableAndFields()">Clear</button>
+        </div>
       <table id="dataTable" border="1">
           <thead>
               <tr>
                   <th>Name</th>
                   
                   <th>Email</th>
-                  <th>Mobile</th>
+                  <th>Phone</th>
                   <th>Address</th>
                   <th>Home Phone</th>
                   <th>Mobile</th>
                   <th>Other Phone</th> 
                   <th>Add this Number too</th> 
                   <th>Select</th> 
-                  <th>ContactID</th>
+                  <!-- <th>ContactID</th> -->
                   
 
                   <!-- Add more columns as needed -->
