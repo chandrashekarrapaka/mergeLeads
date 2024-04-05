@@ -155,8 +155,8 @@
             email: contact.Email || contact.Secondary_Email || '',
             phone: contact.Phone,
             mobile:contact.Mobile,
-            address: contact.Street,
-            wphone: contact.Work_Phone,
+            address: contact.Other_Street,
+            wphone: contact.Other_Phone,
             hphone:contact.Home_Phone
         }));
 
@@ -225,8 +225,10 @@ function displayData(data) {
     tableBody.innerHTML = '';
 
     if (data.length === 0) {
-        console.log("No records found.");
+      hideMergeButton();
+        console.log("No records found.,called hidebutton");
         alert("No Record Found");
+        
         return;
     }
 
@@ -269,6 +271,12 @@ function displayData(data) {
     });
 }
 
+
+function hideMergeButton() {
+    console.log('called');
+    const mergeButton = document.getElementById('mergeButton');
+    mergeButton.style.display = 'none';
+}
 function createRelationDropdown(recordType) {
     const dropdown = document.createElement('select');
     // const optionMaster1 = document.createElement('option');
@@ -372,7 +380,7 @@ function mergeSelectedLeads() {
 }
 
 function mergeLeads(conData) {
-    console.log(conData);
+    //console.log(conData);
    
     const requestData = conData.map(record => ({
         id: record.id,
@@ -394,9 +402,20 @@ function mergeLeads(conData) {
         console.log(data);
 
         if (data.code === 'success') {
-            
+            if(data.details.output=="No Mobile in lead"){
+              showAlert('No Phone number in lead');
+            }
+            else{
+          
             showAlert('Records merged successfully!');
             clearTable();
+          var contactId=JSON.parse(req_data.id);
+          console.log(contactId[0].id);
+          ZOHO.CRM.UI.Record.open({Entity:"Contacts",RecordID:contactId[0].id})
+    .then(function(data){
+    console.log("redirect"+data);
+        });
+      }
         } else {
            
             showAlert('Error merging records. Please try again.');
@@ -425,7 +444,7 @@ function clearTableAndFields() {
 
     // Clear table
     clearTable();
-
+    document.getElementById('mergeButton').style.display = 'none';
     // Clear any status messages
     clearStatusMessage();
 }
@@ -446,6 +465,8 @@ function clearTableAndFields() {
             <input type="text" id="address" placeholder="Enter address"> 
             <button id="searchButton" onclick="searchRecords()">Search</button>
             <button id="clearButton" onclick="clearTableAndFields()">Clear</button>
+      <button id="mergeButton" onclick="mergeSelectedLeads()" style="display: none;">Merge Selected Leads</button>
+
         </div>
       <table id="dataTable" border="1">
           <thead>
@@ -458,7 +479,7 @@ function clearTableAndFields() {
                   <th>Home Phone</th>
                   <th>Mobile</th>
                   <th>Other Phone</th> 
-                  <th>Add this Number too</th> 
+                  <th>Add this Number to</th> 
                   <th>Select</th> 
                   <!-- <th>ContactID</th> -->
                   
@@ -470,8 +491,8 @@ function clearTableAndFields() {
               <!-- Data will be populated here -->
           </tbody>
       </table>
-      <button id="mergeButton" onclick="mergeSelectedLeads()" style="display: none;">Merge Selected Leads</button>
 
+      <!-- <button id="mergeButton" onclick="mergeSelectedLeads()" style="display: none;">Merge Selected Leads</button> -->
 
   </body>
   </body>
